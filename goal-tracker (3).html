@@ -20,12 +20,11 @@ html,body{height:100%;background:#F7F8FA;font-family:-apple-system,BlinkMacSyste
 #header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 #header h1{font-size:18px;font-weight:700;letter-spacing:-0.02em}
 #header-meta{font-size:11px;color:#9AA0B0;margin-top:2px}
-#sync-status{color:#A99DF0;margin-left:6px}
+#sync-status{color:#A99DF0;margin-left:6px;display:none}
 #top-btns{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex-shrink:1;min-width:0}
 #top-btns::-webkit-scrollbar{display:none}
 .top-btn{padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;background:#fff;border:1px solid #E8EBF2;color:#7A8294;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .top-btn.active{background:#1A1E2C;color:#fff;border-color:#1A1E2C}
-#sync-btn{background:#F0EEFF;border-color:#C9C2F5;color:#6B5FD6}
 #cat-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
 #cat-tabs::-webkit-scrollbar{display:none}
 .cat-tab{padding:8px 10px;border-radius:8px 8px 0 0;font-size:11px;font-weight:600;border:1px solid transparent;border-bottom:none;cursor:pointer;white-space:nowrap;background:transparent;color:#9AA0B0;flex-shrink:0}
@@ -51,9 +50,6 @@ html,body{height:100%;background:#F7F8FA;font-family:-apple-system,BlinkMacSyste
 .goal-text-el{font-size:14px;color:#2A2F3C;line-height:1.55}
 .goal-text-el.done-text{text-decoration:line-through;color:#9AA0B0}
 .goal-meta{display:flex;align-items:center;gap:6px;margin-top:5px}
-.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
-.sync-lbl{font-size:10px;color:#AAB0BC}
-.notion-lnk{font-size:10px;color:#A99DF0;text-decoration:none;margin-left:2px}
 .slider-row{margin-top:10px;display:flex;align-items:center}
 input[type=range]{flex:1;height:4px;cursor:pointer}
 .notes-ta{margin-top:8px;width:100%;border:1px solid #E8EBF2;border-radius:8px;color:#555;font-size:12px;padding:6px 10px;resize:vertical;font-family:inherit;background:#FAFAFA;outline:none}
@@ -101,18 +97,9 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
 .acc-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
 .acc-tag{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600}
 .acc-done{font-size:11px;color:#3A8F66;font-weight:700;flex-shrink:0;margin-left:auto}
-.notion-footer{text-align:center;margin-top:20px}
-.notion-footer a{font-size:12px;color:#6B5FD6;text-decoration:none;padding:8px 16px;border-radius:8px;background:#F0EEFF;border:1px solid #C9C2F5;display:inline-block}
 #toast{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#1A1E2C;color:#fff;font-size:13px;font-weight:500;padding:10px 20px;border-radius:99px;opacity:0;transition:opacity 0.25s;pointer-events:none;z-index:999;white-space:nowrap}
 #toast.show{opacity:1}
-#api-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-#api-modal.visible{display:flex}
-#api-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:360px}
-#api-box h2{font-size:16px;font-weight:700;margin-bottom:8px}
-#api-box p{font-size:13px;color:#7A8294;margin-bottom:16px;line-height:1.5}
-#api-key-input{width:100%;border:1.5px solid #E8EBF2;border-radius:10px;font-size:13px;padding:10px 12px;font-family:inherit;outline:none;margin-bottom:12px}
-#api-save-btn{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:700;background:#6B5FD6;border:none;color:#fff;cursor:pointer}
-/* ── TODAY ── */
+/*  TODAY  */
 #today{padding:16px;display:none}
 #today.visible{display:block}
 #today-greeting{margin-bottom:18px}
@@ -142,7 +129,7 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
 #today-add-row{display:flex;gap:8px;margin-top:10px}
 #today-add-input{flex:1;background:#fff;border:1.5px solid #E8EBF2;border-radius:10px;color:#1A1E2C;font-size:14px;padding:10px 14px;font-family:inherit;outline:none}
 #today-add-btn{padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;border:none;color:#fff;cursor:pointer;background:#1A1E2C}
-/* ── BRAINSTORM ── */
+/*  BRAINSTORM  */
 #brainstorm{padding:16px;display:none}
 #brainstorm.visible{display:block}
 #bs-intro{background:#FFFBF0;border:1px solid #F5E6B3;border-radius:12px;padding:14px 16px;margin-bottom:16px}
@@ -178,7 +165,7 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
 .promote-period-btn.selected{background:#F0EEFF;border-color:#C9C2F5;color:#6B5FD6}
 #promote-confirm{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:700;background:#6B5FD6;border:none;color:#fff;cursor:pointer}
 #promote-cancel{width:100%;padding:9px;border-radius:10px;font-size:13px;font-weight:600;background:#fff;border:1px solid #E8EBF2;color:#9AA0B0;cursor:pointer;margin-top:8px}
-/* ── WEEKLY PLANNER ── */
+/*  WEEKLY PLANNER  */
 #planner{padding:16px;display:none}
 #planner.visible{display:block}
 #planner-week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:#fff;border:1px solid #E8EBF2;border-radius:12px;padding:10px 14px}
@@ -244,7 +231,6 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
         <div id="header-meta"><span id="today-date"></span><span id="sync-status"></span></div>
       </div>
       <div id="top-btns">
-        <button class="top-btn" id="sync-btn" onclick="syncFromNotion()">Sync</button>
         <button class="top-btn" id="btn-today" onclick="showView('today')">Today</button>
         <button class="top-btn active" id="btn-goals" onclick="showView('board')">Goals</button>
         <button class="top-btn" id="btn-planner" onclick="showView('planner')">Planner</button>
@@ -289,7 +275,6 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
         <button id="clear-filter" onclick="setTrackerFilter('all')">Show all</button>
       </div>
       <div id="acc-list"></div>
-      <div class="notion-footer"><a href="https://app.notion.com/p/88db18fb3953423fb06758f42dbb6613" target="_blank">Open in Notion</a></div>
     </div>
 
     <!-- TODAY -->
@@ -397,21 +382,9 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
 
 <div id="toast"></div>
 
-<div id="api-modal">
-  <div id="api-box">
-    <h2>Anthropic API Key</h2>
-    <p>Enter your API key to enable Notion sync and AI suggestions. It is saved only in this browser and never sent anywhere except Anthropic.</p>
-    <input id="api-key-input" type="password" placeholder="sk-ant-…">
-    <button id="api-save-btn" onclick="saveApiKey()">Save &amp; Continue</button>
-  </div>
-</div>
-
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
+// -- CONFIG 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const NOTION_DS_ID = '2860fcef-1070-4770-b873-6a6ec9a61a59';
-const NOTION_DS_URL = 'collection://' + NOTION_DS_ID;
-const MCP_URL = 'https://mcp.notion.com/mcp';
 const STORAGE_KEY = 'gt-pwa-v1';
 const PALETTE = {
   personal:      {bg:'#F0EEFF',border:'#C9C2F5',text:'#6B5FD6',fill:'#A99DF0',label:'Personal'},
@@ -428,7 +401,7 @@ const PERIODS = ['Daily','Weekly','Monthly'];
 const ALL_PERIODS = ['Daily','Weekly','Monthly','This Week'];
 const PERIOD_ACCENT = {Daily:'#80C4F0',Weekly:'#A99DF0',Monthly:'#8DDBB0','This Week':'#F0BB7A'};
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
+// -- STATE 
 let goals = Object.fromEntries(CATS.map(c=>[c,{Daily:[],Weekly:[],Monthly:[]}]));
 let ideas = Object.fromEntries(CATS.map(c=>[c,[]]));
 let todayExtras = [];
@@ -438,7 +411,7 @@ let thisWeekGoals = {};
 // planner: plannerItems[weekKey][dayIndex] = [{id,text,catId,fromGoalId,done}]
 let plannerItems = {};
 let activeCat = 'personal', activePeriod = 'Daily', currentView = 'board', trackerFilter = 'all';
-let syncStatuses = {}, syncQueue = new Set(), editingId = null, showingNotes = new Set();
+let editingId = null, showingNotes = new Set();
 let suggList = [], bsSuggList = [];
 let bsActiveCat = 'personal', bsEditingId = null, bsShowingNotes = new Set();
 let promoteId = null, promotePeriod = 'Daily';
@@ -446,26 +419,18 @@ let plannerWeekOffset = 0, plannerActiveDay = new Date().getDay(); // 0=Sun..6=S
 let pgpActiveCat = 'personal', showingGoalPicker = false;
 let apiKey = null;
 
-// ── API KEY MODAL ─────────────────────────────────────────────────────────────
+// -- API KEY MODAL 
 function getApiKey() {
   if (apiKey) return apiKey;
   apiKey = localStorage.getItem('gt_api_key') || '';
   return apiKey;
 }
-function saveApiKey() {
-  const val = document.getElementById('api-key-input').value.trim();
-  if (!val) return;
-  apiKey = val; localStorage.setItem('gt_api_key', val);
-  document.getElementById('api-modal').classList.remove('visible');
-  toast('API key saved'); syncFromNotion();
-}
 function ensureApiKey() {
   if (getApiKey()) return true;
-  document.getElementById('api-modal').classList.add('visible');
   return false;
 }
 
-// ── STORAGE ───────────────────────────────────────────────────────────────────
+// -- STORAGE 
 function todayKey(){return 'td-'+new Date().toISOString().slice(0,10);}
 function currentWeekKey(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return 'wk-'+d.toISOString().slice(0,10);}
 function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({goals,ideas,plannerItems,thisWeekGoals})); localStorage.setItem(todayKey(),JSON.stringify({extras:todayExtras,checked:todayChecked})); } catch {} }
@@ -473,79 +438,19 @@ function loadLocal() { try { const d=localStorage.getItem(STORAGE_KEY); return d
 function loadTodayLocal(){ try { const d=localStorage.getItem(todayKey()); return d?JSON.parse(d):null; } catch { return null; } }
 function getThisWeekList(catId){ const wk=currentWeekKey(); if(!thisWeekGoals[wk])thisWeekGoals[wk]={}; if(!thisWeekGoals[wk][catId])thisWeekGoals[wk][catId]=[]; return thisWeekGoals[wk][catId]; }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
+// -- TOAST 
 let _tt;
 function toast(msg) {
   const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
   clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('show'),2200);
 }
-function setSS(msg) { document.getElementById('sync-status').textContent = msg ? ' · '+msg : ''; }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
+// -- UTILS 
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function getGoal(id){for(const c of CATS)for(const p of PERIODS){const g=(goals[c][p]||[]).find(g=>g.id===id);if(g)return g;}return null;}
-function mkGoal(text){return{id:crypto.randomUUID(),text,progress:0,status:'active',createdAt:new Date().toISOString(),notes:'',notionUrl:null};}
+function mkGoal(text){return{id:crypto.randomUUID(),text,progress:0,status:'active',createdAt:new Date().toISOString(),notes:''};}
 
-// ── NOTION API ────────────────────────────────────────────────────────────────
-async function notionCall(prompt, maxTok=1000) {
-  const key=getApiKey(); if(!key) return null;
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-beta':'mcp-client-2025-04-04'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,mcp_servers:[{type:'url',url:MCP_URL,name:'notion-mcp'}],messages:[{role:'user',content:prompt}]})});
-  const d=await r.json(); return d.content?.find(b=>b.type==='text')?.text||'';
-}
-async function createNotionPage(g, catLabel, period) {
-  const txt=await notionCall(`Create a Notion page in the Goal Tracker database (data_source_id: "${NOTION_DS_ID}") with: Goal (title): "${g.text.replace(/"/g,'\\"')}", Category: "${catLabel}", Period: "${period}", Progress: ${g.progress}, Status: "${g.status==='done'?'Done':g.status==='paused'?'Paused':'Active'}", Notes: "${(g.notes||'').replace(/"/g,'\\"')}", Goal ID: "${g.id}". Return ONLY the URL of the created page.`);
-  const m=(txt||'').match(/https:\/\/(?:www\.)?notion\.(?:so|com)\/[^\s"')]+/); return m?m[0]:null;
-}
-async function updateNotionPage(url, g) {
-  if(!url)return;
-  await notionCall(`Update the Notion page at URL "${url}": Goal: "${g.text.replace(/"/g,'\\"')}", Progress: ${g.progress}, Status: "${g.status==='done'?'Done':g.status==='paused'?'Paused':'Active'}", Notes: "${(g.notes||'').replace(/"/g,'\\"')}". Confirm.`);
-}
-async function syncFromNotion() {
-  if(!ensureApiKey())return; setSS('Loading…');
-  try {
-    const txt=await notionCall(`Query Notion Goal Tracker DB (${NOTION_DS_URL}). SQL: SELECT url,"Goal","Category","Period","Progress","Status","Notes","Goal ID" FROM "${NOTION_DS_URL}" ORDER BY createdTime ASC. Return ONLY a JSON array with fields: url,Goal,Category,Period,Progress,Status,Notes,GoalID. No other text.`,4000);
-    const rows=JSON.parse((txt||'[]').replace(/\`\`\`json|\`\`\`/g,'').trim());
-    if(!Array.isArray(rows)){setSS('');return;}
-    const eids=new Set(CATS.flatMap(c=>PERIODS.flatMap(p=>(goals[c][p]||[]).map(g=>g.id))));
-    const toS=s=>s==='Done'?'done':s==='Paused'?'paused':'active';
-    rows.forEach(row=>{
-      const gid=row.GoalID||row['Goal ID']||'';
-      const cat=CATS.find(c=>PALETTE[c].label===row.Category);
-      const per=row.Period;
-      if(!cat||!PERIODS.includes(per))return;
-      if(eids.has(gid)){
-        goals[cat][per]=(goals[cat][per]||[]).map(g=>g.id!==gid?g:{...g,text:row.Goal||g.text,progress:row.Progress!=null?+row.Progress:g.progress,status:toS(row.Status),notes:row.Notes||g.notes,notionUrl:row.url||g.notionUrl});
-      } else {
-        if(!goals[cat][per])goals[cat][per]=[];
-        goals[cat][per].push({id:gid||crypto.randomUUID(),text:row.Goal||'Untitled',progress:row.Progress!=null?+row.Progress:0,status:toS(row.Status),notes:row.Notes||'',createdAt:new Date().toISOString(),notionUrl:row.url||null});
-      }
-      syncStatuses[gid]='synced';
-    });
-    saveLocal(); setSS('Synced'); render(); toast('Synced from Notion');
-    setTimeout(()=>setSS(''),2000);
-  } catch(e){setSS('Sync error');setTimeout(()=>setSS(''),3000);}
-}
-async function pushGoal(g, catId, period) {
-  if(syncQueue.has(g.id))return;
-  syncQueue.add(g.id); syncStatuses[g.id]='syncing'; updateDot(g.id);
-  try {
-    if(g.notionUrl){await updateNotionPage(g.notionUrl,g);}
-    else {
-      const url=await createNotionPage(g,PALETTE[catId].label,period);
-      if(url){CATS.forEach(c=>PERIODS.forEach(p=>{goals[c][p]=(goals[c][p]||[]).map(x=>x.id===g.id?{...x,notionUrl:url}:x);}));saveLocal();}
-    }
-    syncStatuses[g.id]='synced';
-  } catch {syncStatuses[g.id]='error';}
-  syncQueue.delete(g.id); updateDot(g.id);
-}
-function updateDot(id){
-  const st=syncStatuses[id]||'unsynced';
-  const cols={synced:'#8DDBB0',syncing:'#F0BB7A',unsynced:'#C8CDD8',error:'#EE9898'};
-  const d=document.getElementById('dot-'+id); if(d){d.style.background=cols[st];d.style.animation=st==='syncing'?'pulse 1s infinite':'none';}
-  const l=document.getElementById('slbl-'+id); if(l)l.textContent=st;
-}
-
-// ── AI SUGGESTIONS ────────────────────────────────────────────────────────────
+// -- AI SUGGESTIONS 
 async function getAISuggestions(){
   if(!ensureApiKey())return;
   const btn=document.getElementById('ai-btn'); btn.textContent='Getting suggestions…'; btn.disabled=true;
@@ -567,30 +472,24 @@ function renderSuggs(){
 function addSugg(i){
   if(!suggList[i])return;
   const g=mkGoal(suggList[i]);
-  goals[activeCat][activePeriod].push(g); syncStatuses[g.id]='unsynced';
+  if(activePeriod==='This Week'){ getThisWeekList(activeCat).push(g); }
+  else { goals[activeCat][activePeriod].push(g); }
   suggList.splice(i,1); saveLocal(); renderGoals(); renderSuggs();
-  setTimeout(()=>pushGoal(g,activeCat,activePeriod),500);
 }
 
-// ── GOAL CRUD ─────────────────────────────────────────────────────────────────
+// -- GOAL CRUD 
 function addGoal(){
   const inp=document.getElementById('add-input'); const txt=inp.value.trim(); if(!txt)return;
   const g=mkGoal(txt);
-  if(activePeriod==='This Week'){
-    getThisWeekList(activeCat).push(g);
-  } else {
-    goals[activeCat][activePeriod].push(g);
-  }
-  syncStatuses[g.id]='unsynced';
+  if(activePeriod==='This Week'){ getThisWeekList(activeCat).push(g); }
+  else { goals[activeCat][activePeriod].push(g); }
   inp.value=''; saveLocal(); renderGoals();
-  setTimeout(()=>pushGoal(g,activeCat,activePeriod),500);
 }
 function updateGoal(id, ch){
   if(activePeriod==='This Week'){
     const wk=currentWeekKey(); if(thisWeekGoals[wk]?.[activeCat]) thisWeekGoals[wk][activeCat]=thisWeekGoals[wk][activeCat].map(g=>g.id===id?{...g,...ch}:g);
   } else { CATS.forEach(c=>PERIODS.forEach(p=>{goals[c][p]=(goals[c][p]||[]).map(g=>g.id===id?{...g,...ch}:g);})); }
-  syncStatuses[id]='unsynced'; saveLocal(); renderGoals(); if(currentView==='tracker')renderTracker();
-  const g=getGoal(id); if(g)setTimeout(()=>pushGoal(g,activeCat,activePeriod),1200);
+  saveLocal(); renderGoals(); if(currentView==='tracker')renderTracker();
 }
 function updateGoalInline(id, ch){
   if(activePeriod==='This Week'){
@@ -602,7 +501,7 @@ function deleteGoal(id){
   if(activePeriod==='This Week'){
     const wk=currentWeekKey(); if(thisWeekGoals[wk]?.[activeCat]) thisWeekGoals[wk][activeCat]=thisWeekGoals[wk][activeCat].filter(g=>g.id!==id);
   } else { CATS.forEach(c=>PERIODS.forEach(p=>{goals[c][p]=(goals[c][p]||[]).filter(g=>g.id!==id);})); }
-  delete syncStatuses[id]; saveLocal(); renderGoals(); if(currentView==='tracker')renderTracker();
+  saveLocal(); renderGoals(); if(currentView==='tracker')renderTracker();
 }
 function getGoal(id){
   for(const c of CATS)for(const p of PERIODS){const g=(goals[c][p]||[]).find(g=>g.id===id);if(g)return g;}
@@ -617,7 +516,7 @@ function saveEdit(id){const el=document.getElementById('edit-'+id);if(!el)return
 function toggleNotes(id){showingNotes.has(id)?showingNotes.delete(id):showingNotes.add(id);renderGoals();setTimeout(()=>{const el=document.getElementById('notes-'+id);if(el)el.focus();},50);}
 function saveNotes(id){const el=document.getElementById('notes-'+id);if(!el)return;updateGoal(id,{notes:el.value});}
 
-// ── RENDER BOARD ──────────────────────────────────────────────────────────────
+// -- RENDER BOARD 
 function init(){
   document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   renderCatTabs(); renderPeriodTabs(); render();
@@ -733,7 +632,6 @@ function renderGoals(){
 function goalHTML(g){
   const p=PALETTE[activeCat]; const isDone=g.status==='done'; const isPaused=g.status==='paused';
   const circ=2*Math.PI*17; const off=circ*(1-g.progress/100);
-  const dotCol={synced:'#8DDBB0',syncing:'#F0BB7A',unsynced:'#C8CDD8',error:'#EE9898'}[syncStatuses[g.id]||'unsynced'];
   if(editingId===g.id){
     return `<div class="goal-card" id="card-${g.id}"><div class="card-inner">
       <div class="ring-wrap"><svg width="44" height="44"><circle cx="22" cy="22" r="17" fill="none" stroke="#EEF0F4" stroke-width="4"/><circle cx="22" cy="22" r="17" fill="none" stroke="${p.fill}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:50% 50%"/></svg><div class="ring-label" style="color:${p.text}">${g.progress}%</div></div>
@@ -745,7 +643,6 @@ function goalHTML(g){
     <div class="ring-wrap"><svg width="44" height="44"><circle cx="22" cy="22" r="17" fill="none" stroke="#EEF0F4" stroke-width="4"/><circle cx="22" cy="22" r="17" fill="none" stroke="${p.fill}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" id="rc-${g.id}" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 0.4s"/></svg><div class="ring-label" style="color:${p.text}" id="rl-${g.id}">${g.progress}%</div></div>
     <div style="flex:1;min-width:0">
       <div class="goal-text-el${isDone?' done-text':''}" id="gt-${g.id}">${esc(g.text)}</div>
-      <div class="goal-meta"><span class="sync-dot" id="dot-${g.id}" style="background:${dotCol}"></span><span class="sync-lbl" id="slbl-${g.id}">${syncStatuses[g.id]||'unsynced'}</span>${g.notionUrl?`<a class="notion-lnk" href="${g.notionUrl}" target="_blank">Notion</a>`:''}</div>
       <div class="slider-row"><input type="range" id="sl-${g.id}" min="0" max="100" step="5" value="${g.progress}" style="accent-color:${p.fill}"></div>
       ${showingNotes.has(g.id)?`<textarea class="notes-ta" id="notes-${g.id}" rows="2" placeholder="Notes…" onblur="saveNotes('${g.id}')">${esc(g.notes||'')}</textarea>`:''}
     </div>
@@ -759,7 +656,7 @@ function goalHTML(g){
   </div></div>`;
 }
 
-// ── RENDER TRACKER ────────────────────────────────────────────────────────────
+// -- RENDER TRACKER 
 function setTrackerFilter(f){trackerFilter=f;document.getElementById('clear-filter').style.display=f==='all'?'none':'inline';renderTracker();}
 function renderTracker(){
   const cs=CATS.map(c=>{
@@ -779,7 +676,7 @@ function renderTracker(){
   document.getElementById('acc-list').innerHTML=acc.length===0?`<div style="text-align:center;padding:32px 0;color:#BCC1CC;font-size:14px">No accomplished goals yet — keep going!</div>`:acc.map(g=>`<div class="acc-card" style="border-color:${g.pal.border}"><div class="acc-ring" style="background:${g.pal.bg};border:1.5px solid ${g.pal.border};color:${g.pal.text}">100</div><div style="flex:1;min-width:0"><div class="acc-text">${esc(g.text)}</div><div class="acc-tags"><span class="acc-tag" style="background:${g.pal.bg};color:${g.pal.text}">${g.catLbl}</span><span class="acc-tag" style="background:#F0F2F6;color:#7A8294">${g.period}</span></div></div><div class="acc-done">Done</div></div>`).join('');
 }
 
-// ── BRAINSTORM ────────────────────────────────────────────────────────────────
+// -- BRAINSTORM 
 function mkIdea(text){return{id:crypto.randomUUID(),text,notes:'',catId:bsActiveCat,createdAt:new Date().toISOString()};}
 
 function addIdea(){
@@ -824,7 +721,6 @@ function confirmPromote(){
   const g=mkGoal(idea.text); g.notes=idea.notes||'';
   if(!goals[idea.catId])goals[idea.catId]={Daily:[],Weekly:[],Monthly:[]};
   goals[idea.catId][promotePeriod].push(g);
-  syncStatuses[g.id]='unsynced';
   // Remove from ideas
   CATS.forEach(c=>{ideas[c]=(ideas[c]||[]).filter(i=>i.id!==promoteId);});
   saveLocal(); closePromoteModal(); renderBSList();
@@ -832,7 +728,7 @@ function confirmPromote(){
   activeCat=idea.catId; activePeriod=promotePeriod;
   showView('board'); updateCatStyles(); renderPeriodTabs(); renderGoals();
   toast('Promoted to ' + promotePeriod + ' goal');
-  setTimeout(()=>pushGoal(g,idea.catId,promotePeriod),500);
+  
 }
 
 // AI ideas for brainstorm
@@ -921,7 +817,7 @@ function bsIdeaHTML(idea){
   </div>`;
 }
 
-// ── TODAY ─────────────────────────────────────────────────────────────────────
+// -- TODAY 
 function greeting(){
   const h=new Date().getHours();
   return h<12?'Good morning':h<17?'Good afternoon':'Good evening';
@@ -945,8 +841,6 @@ function todayMarkGoalDone(goalId, catId){
   goals[catId]['Daily']=(goals[catId]['Daily']||[]).map(g=>g.id===goalId?{...g,status:'done',progress:100}:g);
   todayChecked[goalId]=true; saveLocal();
   renderToday();
-  const g=goals[catId]['Daily'].find(g=>g.id===goalId);
-  if(g) setTimeout(()=>pushGoal(g,catId,'Daily'),500);
 }
 
 function renderToday(){
@@ -1052,8 +946,6 @@ function toggleTodayGoal(goalId, catId){
     todayChecked[goalId]=true;
   }
   saveLocal(); renderToday();
-  const updated=(goals[catId]['Daily']||[]).find(g=>g.id===goalId);
-  if(updated) setTimeout(()=>pushGoal(updated,catId,'Daily'),600);
 }
 
 function jumpToGoal(catId, period){
@@ -1061,7 +953,7 @@ function jumpToGoal(catId, period){
   showView('board'); updateCatStyles(); renderPeriodTabs(); renderGoals();
 }
 
-// ── WEEKLY PLANNER ────────────────────────────────────────────────────────────
+// -- WEEKLY PLANNER 
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -1213,7 +1105,7 @@ function renderPlannerOverview(){
     }).join('');
 }
 
-// ── BOOT ──────────────────────────────────────────────────────────────────────
+// -- BOOT 
 document.getElementById('add-input').addEventListener('keydown',e=>{if(e.key==='Enter')addGoal();});
 document.getElementById('bs-add-input').addEventListener('keydown',e=>{if(e.key==='Enter')addIdea();});
 document.getElementById('today-add-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTodayTask();});
@@ -1229,8 +1121,6 @@ if(saved){
 const savedToday=loadTodayLocal();
 if(savedToday){todayExtras=savedToday.extras||[];todayChecked=savedToday.checked||{};}
 init();
-if(getApiKey()) setTimeout(syncFromNotion,900);
-else document.getElementById('api-modal').classList.add('visible');
 </script>
 </body>
 </html>
