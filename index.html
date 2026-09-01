@@ -406,6 +406,7 @@ let goals = Object.fromEntries(CATS.map(c=>[c,{Daily:[],Weekly:[],Monthly:[]}]))
 let ideas = Object.fromEntries(CATS.map(c=>[c,[]]));
 let todayExtras = [];
 let todayChecked = {};
+let accomplishments = {}; // {YYYY-MM-DD: [{text, catId, period}, ...]}
 // thisWeekGoals[weekKey][catId] = [{...goal}]  — one-time goals per week
 let thisWeekGoals = {};
 // planner: plannerItems[weekKey][dayIndex] = [{id,text,catId,fromGoalId,done}]
@@ -433,10 +434,36 @@ function ensureApiKey() {
 // -- STORAGE 
 function todayKey(){return 'td-'+new Date().toISOString().slice(0,10);}
 function currentWeekKey(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return 'wk-'+d.toISOString().slice(0,10);}
-function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({goals,ideas,plannerItems,thisWeekGoals})); localStorage.setItem(todayKey(),JSON.stringify({extras:todayExtras,checked:todayChecked})); } catch {} }
+function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({goals,ideas,plannerItems,thisWeekGoals,accomplishments})); localStorage.setItem(todayKey(),JSON.stringify({extras:todayExtras,checked:todayChecked})); } catch {} }
 function loadLocal() { try { const d=localStorage.getItem(STORAGE_KEY); return d?JSON.parse(d):null; } catch { return null; } }
 function loadTodayLocal(){ try { const d=localStorage.getItem(todayKey()); return d?JSON.parse(d):null; } catch { return null; } }
 function getThisWeekList(catId){ const wk=currentWeekKey(); if(!thisWeekGoals[wk])thisWeekGoals[wk]={}; if(!thisWeekGoals[wk][catId])thisWeekGoals[wk][catId]=[]; return thisWeekGoals[wk][catId]; }
+function resetDailyGoals(){
+  const lastReset=localStorage.getItem('gt_last_daily_reset');
+  const today=new Date().toISOString().slice(0,10);
+  if(lastReset===today)return;
+  
+  // Save completed daily goals to accomplishments before reset
+  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  const yesterdayKey=yesterday.toISOString().slice(0,10);
+  accomplishments[yesterdayKey]=accomplishments[yesterdayKey]||[];
+  
+  CATS.forEach(c=>{
+    if(goals[c]['Daily']){
+      const completedToday=goals[c]['Daily'].filter(g=>g.status==='done');
+      completedToday.forEach(g=>{
+        accomplishments[yesterdayKey].push({text:g.text,catId:c,period:'Daily'});
+      });
+      // Now reset the daily goals
+      goals[c]['Daily']=goals[c]['Daily'].map(g=>({...g,progress:0,status:'active'}));
+    }
+  });
+  
+  todayExtras=[];
+  todayChecked={};
+  localStorage.setItem('gt_last_daily_reset',today);
+  saveLocal();
+}
 
 // -- TOAST 
 let _tt;
@@ -665,15 +692,33 @@ function renderTracker(){
     const bp=Object.fromEntries(PERIODS.map(p=>{const gs=goals[c][p]||[];return [p,{done:gs.filter(g=>g.status==='done').length,total:gs.length,avg:gs.length?Math.round(gs.reduce((s,g)=>s+g.progress,0)/gs.length):0}];}));
     return {id:c,...PALETTE[c],done,total,bp};
   });
-  const td=cs.reduce((s,c)=>s+c.done,0); const tg=cs.reduce((s,c)=>s+c.total,0); const tp=tg>0?Math.round((td/tg)*100):0;
-  document.getElementById('total-count').textContent=td;
+  
+  // Include historical accomplishments in total count
+  const allAccomplishments=Object.values(accomplishments).flat();
+  const totalAccomplished=cs.reduce((s,c)=>s+c.done,0)+allAccomplishments.length;
+  const tg=cs.reduce((s,c)=>s+c.total,0)+allAccomplishments.length;
+  const tp=tg>0?Math.round((totalAccomplished/tg)*100):0;
+  
+  document.getElementById('total-count').textContent=totalAccomplished;
   document.getElementById('total-sub').textContent=`goals accomplished out of ${tg} total`;
   document.getElementById('total-fill').style.width=tp+'%';
   document.getElementById('total-pct').textContent=`${tp}% complete across all categories`;
-  document.getElementById('cat-pills').innerHTML=cs.map(c=>{const pct=c.total>0?Math.round((c.done/c.total)*100):0;const a=trackerFilter===c.id;return `<button class="cat-pill" onclick="setTrackerFilter('${c.id}')" style="${a?`background:${c.bg};border-color:${c.border}`:''}"><div class="pill-count" style="color:${c.text}">${c.done}<span>/${c.total}</span></div><div class="pill-lbl">${c.label}</div>${c.total>0?`<div style="margin-top:6px"><div class="prog-track" style="height:3px"><div class="prog-fill" style="width:${pct}%;background:${c.text}"></div></div></div>`:''}</button>`;}).join('');
+  document.getElementById('cat-pills').innerHTML=cs.map(c=>{
+    const histAccomplished=allAccomplishments.filter(a=>a.catId===c.id).length;
+    const totalDone=c.done+histAccomplished;
+    const pct=c.total+histAccomplished>0?Math.round((totalDone/(c.total+histAccomplished))*100):0;
+    const a=trackerFilter===c.id;
+    return `<button class="cat-pill" onclick="setTrackerFilter('${c.id}')" style="${a?`background:${c.bg};border-color:${c.border}`:''}"><div class="pill-count" style="color:${c.text}">${totalDone}<span>/${c.total+histAccomplished}</span></div><div class="pill-lbl">${c.label}</div>${c.total+histAccomplished>0?`<div style="margin-top:6px"><div class="prog-track" style="height:3px"><div class="prog-fill" style="width:${pct}%;background:${c.text}"></div></div></div>`:''}</button>`;
+  }).join('');
+  
   document.getElementById('breakdown').innerHTML=cs.map(c=>`<div class="bk-row"><div class="bk-head"><span class="bk-cat" style="color:${c.text}">${c.label}</span><span class="bk-cnt">${c.done}/${c.total} done</span></div>${PERIODS.map(p=>{const ps=c.bp[p];return `<div class="pr-row"><span class="pr-name">${p}</span><div class="pr-bar"><div class="prog-track" style="height:5px"><div class="prog-fill" style="width:${ps.avg}%;background:${c.fill}"></div></div></div><span class="pr-done">${ps.done}/${ps.total}</span></div>`;}).join('')}</div>`).join('');
-  const acc=CATS.flatMap(c=>PERIODS.flatMap(p=>(goals[c][p]||[]).filter(g=>g.status==='done').map(g=>({...g,catId:c,catLbl:PALETTE[c].label,period:p,pal:PALETTE[c]})))).filter(g=>trackerFilter==='all'||g.catId===trackerFilter);
-  document.getElementById('acc-list').innerHTML=acc.length===0?`<div style="text-align:center;padding:32px 0;color:#BCC1CC;font-size:14px">No accomplished goals yet — keep going!</div>`:acc.map(g=>`<div class="acc-card" style="border-color:${g.pal.border}"><div class="acc-ring" style="background:${g.pal.bg};border:1.5px solid ${g.pal.border};color:${g.pal.text}">100</div><div style="flex:1;min-width:0"><div class="acc-text">${esc(g.text)}</div><div class="acc-tags"><span class="acc-tag" style="background:${g.pal.bg};color:${g.pal.text}">${g.catLbl}</span><span class="acc-tag" style="background:#F0F2F6;color:#7A8294">${g.period}</span></div></div><div class="acc-done">Done</div></div>`).join('');
+  
+  // Build accomplished list: current goals + historical accomplishments
+  const currAcc=CATS.flatMap(c=>PERIODS.flatMap(p=>(goals[c][p]||[]).filter(g=>g.status==='done').map(g=>({...g,catId:c,catLbl:PALETTE[c].label,period:p,pal:PALETTE[c],date:null,isHistorical:false}))));
+  const histAcc=Object.entries(accomplishments).flatMap(([date,items])=>items.map(item=>({text:item.text,catId:item.catId,catLbl:PALETTE[item.catId].label,period:item.period,pal:PALETTE[item.catId],date,isHistorical:true})));
+  const acc=[...currAcc,...histAcc].filter(g=>trackerFilter==='all'||g.catId===trackerFilter).sort((a,b)=>b.date&&a.date?new Date(b.date)-new Date(a.date):b.date?-1:a.date?1:0);
+  
+  document.getElementById('acc-list').innerHTML=acc.length===0?`<div style="text-align:center;padding:32px 0;color:#BCC1CC;font-size:14px">No accomplished goals yet — keep going!</div>`:acc.map(g=>`<div class="acc-card" style="border-color:${g.pal.border}"><div class="acc-ring" style="background:${g.pal.bg};border:1.5px solid ${g.pal.border};color:${g.pal.text}">100</div><div style="flex:1;min-width:0"><div class="acc-text">${esc(g.text)}</div><div class="acc-tags"><span class="acc-tag" style="background:${g.pal.bg};color:${g.pal.text}">${g.catLbl}</span><span class="acc-tag" style="background:#F0F2F6;color:#7A8294">${g.period}</span>${g.date?`<span class="acc-tag" style="background:#F0F2F6;color:#7A8294">${new Date(g.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`:''}</div></div><div class="acc-done">Done</div></div>`).join('');
 }
 
 // -- BRAINSTORM 
@@ -1117,7 +1162,9 @@ if(saved){
   if(saved.ideas){CATS.forEach(c=>{if(saved.ideas[c])ideas[c]=saved.ideas[c];});}
   if(saved.plannerItems){plannerItems=saved.plannerItems;}
   if(saved.thisWeekGoals){thisWeekGoals=saved.thisWeekGoals;}
+  if(saved.accomplishments){accomplishments=saved.accomplishments;}
 }
+resetDailyGoals();
 const savedToday=loadTodayLocal();
 if(savedToday){todayExtras=savedToday.extras||[];todayChecked=savedToday.checked||{};}
 init();
