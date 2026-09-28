@@ -220,6 +220,21 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
 .wor-count{font-size:11px;color:#9AA0B0;flex-shrink:0;width:36px;text-align:right}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#F7F8FA}::-webkit-scrollbar-thumb{background:#DDE0E8;border-radius:99px}
+
+/* --- edit fields, chips --- */
+.edit-fields{margin-top:12px;padding-top:12px;border-top:1px solid #F0F2F6;display:flex;flex-direction:column;gap:8px}
+.ef-row{display:flex;align-items:center;gap:8px}
+.ef-label{width:78px;flex-shrink:0;font-size:11px;font-weight:700;color:#9AA0B0;text-transform:uppercase;letter-spacing:.05em}
+.ef-input{flex:1;min-width:0;border:1px solid #E8EBF2;border-radius:8px;font-size:16px;padding:6px 10px;background:#fff;color:#2A2F3C;font-family:inherit;outline:none}
+.dash-check{display:flex;align-items:center;gap:10px;font-size:13px;color:#2A2F3C;padding-top:4px}
+.dash-check input{width:18px;height:18px;flex-shrink:0}
+.ef-note{font-size:11px;color:#9AA0B0}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.g-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#F0F2F6;color:#7A8294}
+.g-chip.due{background:#EAF6FF;color:#2878B5}
+.g-chip.today{background:#FFF5EB;color:#C07A2A}
+.g-chip.over{background:#FFF0F0;color:#C04040}
+.g-chip.sent{background:#EDFAF3;color:#3A8F66}
 </style>
 </head>
 <body>
@@ -298,7 +313,7 @@ input[type=range]{flex:1;height:4px;cursor:pointer}
       </div>
       <div id="today-goals-section">
         <div class="today-section-head">
-          <span class="today-section-title">Daily Goals</span>
+          <span class="today-section-title">Today's Goals</span>
           <span class="today-section-count" id="today-goals-count"></span>
         </div>
         <div id="today-goals-list"></div>
@@ -399,6 +414,11 @@ const PALETTE = {
 const CATS = Object.keys(PALETTE);
 const PERIODS = ['Daily','Weekly','Monthly'];
 const ALL_PERIODS = ['Daily','Weekly','Monthly','This Week'];
+// Daily Dashboard sync: paste the Apps Script web-app URL (ends in /exec) between the quotes.
+// If left empty, the app asks for it the first time you send a goal.
+const DASH_HOOK_URL = '';
+const DASH_CATS = ['Household','Work','Personal','Hobby','Travel'];
+const CAT_TO_DASH = {personal:'Personal',household:'Household',kids:'Household',travel:'Travel',hudson:'Work',meno:'Work',beauty:'Personal',houseprojects:'Household'};
 const PERIOD_ACCENT = {Daily:'#80C4F0',Weekly:'#A99DF0',Monthly:'#8DDBB0','This Week':'#F0BB7A'};
 
 // -- STATE 
@@ -475,7 +495,65 @@ function toast(msg) {
 // -- UTILS 
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function getGoal(id){for(const c of CATS)for(const p of PERIODS){const g=(goals[c][p]||[]).find(g=>g.id===id);if(g)return g;}return null;}
-function mkGoal(text){return{id:crypto.randomUUID(),text,progress:0,status:'active',createdAt:new Date().toISOString(),notes:''};}
+function mkGoal(text){return{id:crypto.randomUUID(),text,progress:0,status:'active',createdAt:new Date().toISOString(),notes:'',dueDate:null,dashCat:null,sendToDash:false,dashSent:false};}
+
+// -- DATES / GOAL LOOKUP (local time, not UTC)
+function localISO(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtDue(iso){if(!iso)return '';return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function findGoalLoc(id){
+  for(const c of CATS)for(const p of PERIODS){const l=goals[c][p]||[];const i=l.findIndex(g=>g.id===id);if(i>=0)return{c,p,i,g:l[i],list:l};}
+  for(const wk of Object.keys(thisWeekGoals))for(const c of CATS){const l=thisWeekGoals[wk][c]||[];const i=l.findIndex(g=>g.id===id);if(i>=0)return{c,p:'This Week',i,g:l[i],list:l,wk};}
+  return null;
+}
+function patchGoalAnywhere(id,ch){const loc=findGoalLoc(id);if(!loc)return null;loc.list[loc.i]={...loc.g,...ch};return loc.list[loc.i];}
+function moveGoal(id,newPeriod){
+  const loc=findGoalLoc(id); if(!loc||loc.p===newPeriod)return false;
+  loc.list.splice(loc.i,1);
+  if(newPeriod==='This Week')getThisWeekList(loc.c).push(loc.g); else goals[loc.c][newPeriod].push(loc.g);
+  return true;
+}
+function goalsForToday(){
+  const out=[],seen=new Set(),t=localISO();
+  const add=(g,c,p)=>{if(seen.has(g.id))return;seen.add(g.id);out.push({...g,catId:c,period:p,pal:PALETTE[c]});};
+  CATS.forEach(c=>(goals[c]['Daily']||[]).forEach(g=>add(g,c,'Daily')));
+  CATS.forEach(c=>PERIODS.forEach(p=>(goals[c][p]||[]).forEach(g=>{if(g.dueDate===t)add(g,c,p);})));
+  const wk=thisWeekGoals[currentWeekKey()]||{};
+  CATS.forEach(c=>(wk[c]||[]).forEach(g=>{if(g.dueDate===t)add(g,c,'This Week');}));
+  return out;
+}
+function goalChips(g){
+  const today=localISO(),chips=[];
+  if(g.dueDate){
+    const isToday=g.dueDate===today, over=g.dueDate<today&&g.status!=='done';
+    chips.push(`<span class="g-chip ${isToday?'today':over?'over':'due'}">${isToday?'Due today':(over?'Overdue · ':'Due ')+fmtDue(g.dueDate)}</span>`);
+  }
+  if(g.dashCat)chips.push(`<span class="g-chip">${esc(g.dashCat)}</span>`);
+  if(g.dashSent)chips.push('<span class="g-chip sent">On Dashboard</span>');
+  return chips.length?`<div class="chip-row">${chips.join('')}</div>`:'';
+}
+
+// -- DAILY DASHBOARD SYNC
+function getDashUrl(){return DASH_HOOK_URL||localStorage.getItem('gt_dash_url')||'';}
+async function sendGoalToDash(id){
+  const loc=findGoalLoc(id); if(!loc)return;
+  const g=loc.g;
+  let url=getDashUrl();
+  if(!url){
+    url=(window.prompt('Paste your Dashboard sync URL (the Apps Script web app link ending in /exec):')||'').trim();
+    if(!url){toast('Saved. Add the sync URL to send it to the Dashboard.');return;}
+    if(!/^https:\/\/script\.google\.com\//.test(url)){toast('That does not look like an Apps Script link');return;}
+    localStorage.setItem('gt_dash_url',url);
+  }
+  const payload={goalId:g.id,task:g.text,category:g.dashCat||CAT_TO_DASH[loc.c]||'Personal',dueDate:g.dueDate||''};
+  try{
+    // no custom headers => plain text/plain request, so the browser skips the CORS preflight
+    const r=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+    const j=await r.json();
+    if(!j||!j.ok)throw new Error((j&&j.error)||'failed');
+    patchGoalAnywhere(id,{dashSent:true,sendToDash:true,dashSentAt:new Date().toISOString()});
+    saveLocal(); renderGoals(); toast('Added to your Dashboard');
+  }catch(e){toast('Could not reach the Dashboard. Edit and save again to retry.');}
+}
 
 // -- AI SUGGESTIONS 
 async function getAISuggestions(){
@@ -539,7 +617,24 @@ function toggleDone(id){const g=getGoal(id);if(!g)return;const done=g.status!=='
 function togglePause(id){const g=getGoal(id);if(!g)return;updateGoal(id,{status:g.status==='paused'?'active':'paused'});}
 function startEdit(id){editingId=id;renderGoals();setTimeout(()=>{const el=document.getElementById('edit-'+id);if(el){el.focus();el.setSelectionRange(9999,9999);}},50);}
 function cancelEdit(){editingId=null;renderGoals();}
-function saveEdit(id){const el=document.getElementById('edit-'+id);if(!el)return;const t=el.value.trim();if(t)updateGoal(id,{text:t});editingId=null;}
+function saveEdit(id){
+  const el=document.getElementById('edit-'+id); if(!el)return;
+  const val=k=>{const x=document.getElementById(k+'-'+id);return x?x.value:null;};
+  const t=el.value.trim();
+  const ch={dueDate:val('due')||null,dashCat:val('dcat')||null};
+  if(t)ch.text=t;
+  const dashEl=document.getElementById('dash-'+id);
+  if(dashEl&&!dashEl.disabled)ch.sendToDash=dashEl.checked;
+  const newPeriod=val('freq');
+  patchGoalAnywhere(id,ch);
+  const moved=newPeriod?moveGoal(id,newPeriod):false;
+  editingId=null;
+  saveLocal();
+  if(moved){setPeriod(newPeriod);toast('Moved to '+newPeriod);}else renderGoals();
+  if(currentView==='tracker')renderTracker();
+  const g=getGoal(id);
+  if(g&&g.sendToDash&&!g.dashSent)sendGoalToDash(id);
+}
 function toggleNotes(id){showingNotes.has(id)?showingNotes.delete(id):showingNotes.add(id);renderGoals();setTimeout(()=>{const el=document.getElementById('notes-'+id);if(el)el.focus();},50);}
 function saveNotes(id){const el=document.getElementById('notes-'+id);if(!el)return;updateGoal(id,{notes:el.value});}
 
@@ -664,12 +759,20 @@ function goalHTML(g){
       <div class="ring-wrap"><svg width="44" height="44"><circle cx="22" cy="22" r="17" fill="none" stroke="#EEF0F4" stroke-width="4"/><circle cx="22" cy="22" r="17" fill="none" stroke="${p.fill}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:50% 50%"/></svg><div class="ring-label" style="color:${p.text}">${g.progress}%</div></div>
       <div style="flex:1;min-width:0"><textarea class="edit-ta" id="edit-${g.id}" rows="2" style="border:1.5px solid ${p.border};background:${p.bg}">${esc(g.text)}</textarea><div class="slider-row"><input type="range" id="sl-${g.id}" min="0" max="100" step="5" value="${g.progress}" style="accent-color:${p.fill}"></div></div>
       <div class="goal-actions"><button class="sm-btn" style="background:${p.bg};color:${p.text}" onclick="saveEdit('${g.id}')">Save</button><button class="sm-btn" style="background:#F4F5F7;color:#888" onclick="cancelEdit()">Cancel</button></div>
+    </div>
+    <div class="edit-fields">
+      <div class="ef-row"><label class="ef-label" for="due-${g.id}">Due date</label><input type="date" class="ef-input" id="due-${g.id}" value="${g.dueDate||''}"><button class="sm-btn" style="background:#F4F5F7;color:#7A8294" onclick="document.getElementById('due-${g.id}').value=''">Clear</button></div>
+      <div class="ef-row"><label class="ef-label" for="freq-${g.id}">Frequency</label><select class="ef-input" id="freq-${g.id}">${(activePeriod==='This Week'?['This Week']:[]).concat(PERIODS).map(pp=>`<option value="${pp}"${pp===activePeriod?' selected':''}>${pp}</option>`).join('')}</select></div>
+      <div class="ef-row"><label class="ef-label" for="dcat-${g.id}">Category</label><select class="ef-input" id="dcat-${g.id}">${DASH_CATS.map(dc=>`<option value="${dc}"${dc===(g.dashCat||CAT_TO_DASH[activeCat])?' selected':''}>${dc}</option>`).join('')}</select></div>
+      <label class="dash-check"><input type="checkbox" id="dash-${g.id}"${(g.sendToDash||g.dashSent)?' checked':''}${g.dashSent?' disabled':''}> Add to my Daily Dashboard as a task</label>
+      ${g.dashSent?`<div class="ef-note">Sent to your Dashboard${g.dashSentAt?' on '+fmtDue(g.dashSentAt.slice(0,10)):''}. Later changes here will not update the Dashboard task.</div>`:''}
     </div></div>`;
   }
   return `<div class="goal-card${isDone?' done':''}${isPaused?' paused':''}" id="card-${g.id}"><div class="card-inner">
     <div class="ring-wrap"><svg width="44" height="44"><circle cx="22" cy="22" r="17" fill="none" stroke="#EEF0F4" stroke-width="4"/><circle cx="22" cy="22" r="17" fill="none" stroke="${p.fill}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" id="rc-${g.id}" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 0.4s"/></svg><div class="ring-label" style="color:${p.text}" id="rl-${g.id}">${g.progress}%</div></div>
     <div style="flex:1;min-width:0">
       <div class="goal-text-el${isDone?' done-text':''}" id="gt-${g.id}">${esc(g.text)}</div>
+      ${goalChips(g)}
       <div class="slider-row"><input type="range" id="sl-${g.id}" min="0" max="100" step="5" value="${g.progress}" style="accent-color:${p.fill}"></div>
       ${showingNotes.has(g.id)?`<textarea class="notes-ta" id="notes-${g.id}" rows="2" placeholder="Notes…" onblur="saveNotes('${g.id}')">${esc(g.notes||'')}</textarea>`:''}
     </div>
@@ -894,7 +997,7 @@ function renderToday(){
   document.getElementById('today-date-full').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
   // Gather all daily goals across all categories
-  const dailyGoals=CATS.flatMap(c=>(goals[c]['Daily']||[]).map(g=>({...g,catId:c,pal:PALETTE[c]})));
+  const dailyGoals=goalsForToday(); // Daily goals + anything with a due date of today
 
   // Gather items planned for today in the Planner (current week, today's day-of-week)
   const todayDow=new Date().getDay();
@@ -919,7 +1022,7 @@ function renderToday(){
   document.getElementById('today-goals-count').textContent=`${checkedIds.size}/${dailyGoals.length}`;
   const glEl=document.getElementById('today-goals-list');
   if(dailyGoals.length===0){
-    glEl.innerHTML=`<div style="font-size:13px;color:#BCC1CC;padding:16px 0;text-align:center">No daily goals set yet — add them in Goals view.</div>`;
+    glEl.innerHTML=`<div style="font-size:13px;color:#BCC1CC;padding:16px 0;text-align:center">Nothing due today and no daily goals set yet.</div>`;
   } else {
     glEl.innerHTML=dailyGoals.map(g=>{
       const done=checkedIds.has(g.id);
@@ -927,9 +1030,9 @@ function renderToday(){
         <div class="today-check${done?' on':''}" onclick="toggleTodayGoal('${g.id}','${g.catId}')"></div>
         <div class="today-item-body">
           <div class="today-item-text">${esc(g.text)}</div>
-          <span class="today-item-cat" style="background:${g.pal.bg};color:${g.pal.text}">${g.pal.label}</span>
+          <span class="today-item-cat" style="background:${g.pal.bg};color:${g.pal.text}">${g.pal.label}</span>${g.period!=='Daily'?'<span class="today-item-cat" style="background:#FFF5EB;color:#C07A2A;margin-left:4px">Due today</span>':''}
         </div>
-        <button class="today-item-del" onclick="event.stopPropagation();jumpToGoal('${g.catId}','Daily')" title="Open in Goals">›</button>
+        <button class="today-item-del" onclick="event.stopPropagation();jumpToGoal('${g.catId}','${g.period}')" title="Open in Goals">›</button>
       </div>`;
     }).join('');
   }
@@ -980,14 +1083,13 @@ function togglePlannerItemFromToday(id){
 }
 
 function toggleTodayGoal(goalId, catId){
-  // If already done, reopen; if not done, mark done
-  const g=(goals[catId]['Daily']||[]).find(g=>g.id===goalId);
-  if(!g)return;
+  const loc=findGoalLoc(goalId); if(!loc)return;
+  const g=loc.g;
   if(g.status==='done'){
-    goals[catId]['Daily']=goals[catId]['Daily'].map(x=>x.id===goalId?{...x,status:'active',progress:Math.min(x.progress,95)}:x);
+    patchGoalAnywhere(goalId,{status:'active',progress:Math.min(g.progress,95)});
     delete todayChecked[goalId];
   } else {
-    goals[catId]['Daily']=goals[catId]['Daily'].map(x=>x.id===goalId?{...x,status:'done',progress:100}:x);
+    patchGoalAnywhere(goalId,{status:'done',progress:100});
     todayChecked[goalId]=true;
   }
   saveLocal(); renderToday();
@@ -1014,6 +1116,33 @@ function getPlannerDay(dayIndex){
   if(!plannerItems[weekKey(plannerWeekOffset)]) plannerItems[weekKey(plannerWeekOffset)]={};
   if(!plannerItems[weekKey(plannerWeekOffset)][dayIndex]) plannerItems[weekKey(plannerWeekOffset)][dayIndex]=[];
   return plannerItems[weekKey(plannerWeekOffset)][dayIndex];
+}
+
+function plannerDateISO(dayIndex){const d=getWeekStart(plannerWeekOffset);d.setDate(d.getDate()+dayIndex);return localISO(d);}
+// stored planner items + goals that belong on that day automatically (Daily goals, and goals due that date)
+function plannerDayView(dayIndex){
+  const stored=getPlannerDay(dayIndex);
+  const iso=plannerDateISO(dayIndex),todayIso=localISO();
+  const seen=new Set(stored.filter(i=>i.fromGoalId).map(i=>i.fromGoalId));
+  const auto=[];
+  const push=(g,c,daily)=>{
+    if(seen.has(g.id))return;
+    const due=g.dueDate===iso; if(!daily&&!due)return;
+    seen.add(g.id);
+    const canToggle=due||iso===todayIso;
+    auto.push({id:g.id,text:g.text,catId:c,auto:due?'Due':'Daily',canToggle,done:canToggle&&g.status==='done'});
+  };
+  CATS.forEach(c=>PERIODS.forEach(p=>(goals[c][p]||[]).forEach(g=>push(g,c,p==='Daily'))));
+  const wk=thisWeekGoals[currentWeekKey()]||{};
+  CATS.forEach(c=>(wk[c]||[]).forEach(g=>push(g,c,false)));
+  return stored.concat(auto);
+}
+function togglePlannerAuto(id){
+  const loc=findGoalLoc(id); if(!loc)return;
+  const g=loc.g;
+  if(g.status==='done')patchGoalAnywhere(id,{status:'active',progress:Math.min(g.progress,95)});
+  else patchGoalAnywhere(id,{status:'done',progress:100});
+  saveLocal(); renderPlannerDay();
 }
 
 function plannerShiftWeek(dir){ plannerWeekOffset+=dir; renderPlanner(); }
@@ -1075,7 +1204,7 @@ function renderPlanner(){
   const tabsEl=document.getElementById('planner-day-tabs');
   tabsEl.innerHTML=DAY_NAMES.map((name,i)=>{
     const d=new Date(ws); d.setDate(d.getDate()+i);
-    const items=getPlannerDay(i);
+    const items=plannerDayView(i);
     const isToday=isCurrentWeek&&i===todayDow;
     const isActive=i===plannerActiveDay;
     return `<button class="day-tab${isActive?' active':''}${isToday&&!isActive?' today-tab':''}${isToday&&isActive?' today-tab active':''}${items.length?' has-items':''}" onclick="setPlannerDay(${i})">
@@ -1096,7 +1225,7 @@ function setPlannerDay(d){
     const dayDate=new Date(ws); dayDate.setDate(dayDate.getDate()+i);
     const isToday=plannerWeekOffset===0&&i===new Date().getDay();
     const isActive=i===d;
-    btn.className='day-tab'+(isActive?' active':'')+(isToday&&!isActive?' today-tab':'')+(isToday&&isActive?' today-tab active':'')+((getPlannerDay(i).length)?' has-items':'');
+    btn.className='day-tab'+(isActive?' active':'')+(isToday&&!isActive?' today-tab':'')+(isToday&&isActive?' today-tab active':'')+((plannerDayView(i).length)?' has-items':'');
   });
   renderPlannerDay();
   if(showingGoalPicker) renderPGPGoalList();
@@ -1109,7 +1238,7 @@ function renderPlannerDay(){
   document.getElementById('planner-day-title').textContent=DAY_FULL[plannerActiveDay]+', '+dayDate.toLocaleDateString('en-US',{month:'long',day:'numeric'});
   document.getElementById('planner-day-sub').textContent=isToday?'Today':'';
 
-  const items=getPlannerDay(plannerActiveDay);
+  const items=plannerDayView(plannerActiveDay);
   const done=items.filter(i=>i.done).length;
   const el=document.getElementById('planner-items-list');
   if(!items.length){
@@ -1117,13 +1246,18 @@ function renderPlannerDay(){
   } else {
     el.innerHTML=items.map(item=>{
       const pal=item.catId?PALETTE[item.catId]:null;
+      const badge=item.auto?`<span class="planner-item-cat" style="background:#F0F2F6;color:#7A8294;margin-left:4px">${item.auto}</span>`:'';
+      const check=item.auto
+        ?(item.canToggle?`<div class="planner-check${item.done?' on':''}" onclick="togglePlannerAuto('${item.id}')"></div>`:`<div class="planner-check" style="opacity:.35"></div>`)
+        :`<div class="planner-check${item.done?' on':''}" onclick="togglePlannerCheck('${item.id}')"></div>`;
+      const del=item.auto?'<span style="width:24px;flex-shrink:0"></span>':`<button class="planner-item-del" onclick="deletePlannerItem('${item.id}')">✕</button>`;
       return `<div class="planner-item${item.done?' p-done':''}">
-        <div class="planner-check${item.done?' on':''}" onclick="togglePlannerCheck('${item.id}')"></div>
+        ${check}
         <div class="planner-item-body">
           <div class="planner-item-text">${esc(item.text)}</div>
-          ${pal?`<span class="planner-item-cat" style="background:${pal.bg};color:${pal.text}">${pal.label}</span>`:''}
+          ${pal?`<span class="planner-item-cat" style="background:${pal.bg};color:${pal.text}">${pal.label}</span>`:''}${badge}
         </div>
-        <button class="planner-item-del" onclick="deletePlannerItem('${item.id}')">✕</button>
+        ${del}
       </div>`;
     }).join('');
   }
@@ -1137,7 +1271,7 @@ function renderPlannerOverview(){
   document.getElementById('planner-week-overview').innerHTML=
     `<div style="padding:12px 16px;border-bottom:1px solid #F0F2F6"><span style="font-size:12px;font-weight:700;color:#9AA0B0;text-transform:uppercase;letter-spacing:0.06em">Week at a Glance</span></div>`+
     DAY_NAMES.map((name,i)=>{
-      const items=getPlannerDay(i);
+      const items=plannerDayView(i);
       const done=items.filter(x=>x.done).length;
       const pct=items.length?Math.round((done/items.length)*100):0;
       const isToday=isCurrentWeek&&i===todayDow;
@@ -1164,6 +1298,7 @@ if(saved){
   if(saved.thisWeekGoals){thisWeekGoals=saved.thisWeekGoals;}
   if(saved.accomplishments){accomplishments=saved.accomplishments;}
 }
+CATS.forEach(c=>PERIODS.forEach(p=>(goals[c][p]||[]).forEach(g=>{if(!g.dueDate&&g.scheduledDate)g.dueDate=g.scheduledDate;})));
 resetDailyGoals();
 const savedToday=loadTodayLocal();
 if(savedToday){todayExtras=savedToday.extras||[];todayChecked=savedToday.checked||{};}
